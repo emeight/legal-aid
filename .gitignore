@@ -1,2 +1,6 @@
 # ignore environment variables
 .env
+
+# don't upload pycache
+__pycache__/
+*.pyc

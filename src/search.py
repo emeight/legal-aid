@@ -3,7 +3,7 @@ import regex as re
 from math import isclose
 from typing import List, Tuple
 
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
@@ -129,7 +129,7 @@ def search_for_cases(
 
 
 def get_search_coverage(driver: WebDriver, timeout: int = 15) -> float:
-    """
+    """Attempt to find the fraction of results accessible by the query.
 
     Parameters
     ----------
@@ -146,24 +146,24 @@ def get_search_coverage(driver: WebDriver, timeout: int = 15) -> float:
         Defaults to 1.0 if error.
 
     """
-    # wait until the div is present
-    notice_el = WebDriverWait(driver, timeout).until(
-        EC.presence_of_element_located((By.ID, "srchResultNotice"))
-    )
-
-    # i.e. "Returning 100 of 150 records."
-    text = notice_el.text.strip()
-
-    # extract numbers with regex
-    nums = re.findall(r"\d+", text)
-
     try:
+        # wait until the div is present
+        notice_el = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.ID, "srchResultNotice"))
+        )
+
+        # i.e. "Returning 100 of 150 records."
+        text = notice_el.text.strip()
+
+        # extract numbers with regex
+        nums = re.findall(r"\d+", text)
+
         nums = re.findall(r"\d+", text)
         if len(nums) >= 2:
             returned, total = map(int, nums[:2])
             return returned / total if total else 1.0
         return 1.0
-    except (ValueError, IndexError, ZeroDivisionError):
+    except (ValueError, IndexError, NoSuchElementException, TimeoutException, ZeroDivisionError):
         return 1.0
     
 

@@ -15,7 +15,8 @@ Automation script for legal assistance.
   ```
 
 3. Enter date range:
-   ```bash
+   ```console
+   $ poetry run python main.py
    Start date (mm/dd/yyyy):
    End date (mm/dd/yyyy):
    ```

@@ -5,18 +5,17 @@ Automation script for legal assistance.
 ## Quickstart
 
 1. Install dependencies:
-  ```
-  poetry install
-  ```
+   ```console
+   poetry install
+   ```
 
 2. Run the script:
-  ```
-  poetry run python main.py
-  ```
+   ```console
+   poetry run python main.py
+   ```
 
 3. Enter date range:
    ```console
-   $ poetry run python main.py
    Start date (mm/dd/yyyy):
    End date (mm/dd/yyyy):
    ```

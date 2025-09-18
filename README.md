@@ -22,6 +22,6 @@ Automation script for legal assistance.
 
 4. Complete reCAPTCHA
 
-5. Navigate to the Search Page
+5. Navigate to the search page
 
 Once you're on the search page no further action is required. Make sure to keep the browser open and active to avoid errors.

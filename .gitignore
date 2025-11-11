@@ -1,5 +1,6 @@
 # ignore environment variables
 .env
+.venv
 
 # ignore data
 data/

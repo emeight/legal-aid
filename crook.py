@@ -56,9 +56,9 @@ if jitter_factor < 0:
     jitter_factor = abs(jitter_factor)
 
 # config
-timeout = 15  # seconds
-fast_timeout = 5  # seconds
-min_sleep = 3  # seconds
+timeout = 5  # seconds
+fast_timeout = 3  # seconds
+min_sleep = .5  # seconds
 max_sleep = min_sleep + (min_sleep * jitter_factor)
 
 date_input_format = "%m/%d/%Y"
@@ -146,7 +146,7 @@ try:
         end_date=end_date,
         case_types=["Housing Court Summary Process"],
         cities=["All Cities"],
-        statuses=["Active"],
+        statuses=["Active", "Closed"],
         party_types=["Defendant"],
         min_sleep=min_sleep,
         max_sleep=max_sleep,
@@ -167,7 +167,6 @@ try:
 
         # find the coverage from this query
         search_coverage = get_search_coverage(driver, timeout)
-
 
         keep_alive = True
         while keep_alive:
@@ -424,6 +423,22 @@ try:
                 print(f"Exhausted results for {search_date} (Coverage: {round(search_coverage, 3)*100}%).")
                 keep_alive = False
                 break
+        
+        # go back home to start the next search
+        home_link = WebDriverWait(driver, timeout).until(
+            # using link text
+            EC.element_to_be_clickable((By.LINK_TEXT, "Home"))
+        )
+        sleepy_click(home_link, min_sleep, max_sleep)
+
+        # click the search button to begin a fresh search
+        search_button = WebDriverWait(driver, timeout).until(
+            # using link text
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "a.anchorButton.welcome-section"))
+        )
+        sleepy_click(search_button, min_sleep, max_sleep)
+
+
 except Exception as e:
     print(f"Encountered a fatal exception: {e}")
 finally:

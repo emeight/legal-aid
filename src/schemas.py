@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Dict, List, Literal, Optional
 
 
@@ -31,6 +31,10 @@ class CaseSearchConfig:
         """
         return asdict(self)
 
+    def copy(self, **updates):
+        """Return a copy of the instance with optional field overrides."""
+        return replace(self, **updates)
+
 
 @dataclass
 class CourtCase:
@@ -49,6 +53,11 @@ class CourtCase:
     # time data
     created_at : str 
     updated_at : str
+    # extracted structured sections
+    docket_entries: List[Dict[str, str]] = field(default_factory=list)
+    dispositions: List[Dict[str, str]] = field(default_factory=list)
+    judgments: List[Dict[str, str]] = field(default_factory=list)
+
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert the CourtCase instance into a plain dictionary.

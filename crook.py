@@ -122,7 +122,9 @@ run_data = {
 
 try:
     # access the website
-    driver = webdriver.Chrome()
+    options = webdriver.ChromeOptions()
+    options.add_argument("--incognito")
+    driver = webdriver.Chrome(options=options)
     driver.get(website_url)
 
     # rely on user to complete recaptcha
@@ -167,6 +169,7 @@ try:
 
         # find the coverage from this query
         search_coverage = get_search_coverage(driver, timeout)
+        case_records["coverage"][search_date] = {"found": 0, "recorded": 0, "accessible": search_coverage}
 
         keep_alive = True
         while keep_alive:
@@ -233,6 +236,7 @@ try:
             ])
             run_data["counts"]["skipped"] += duplicate_case_count
 
+            run_data["coverage"][search_date]["found"] = len(case_list)
             # to avoid stale links, we grab all the data from the page then cycle over the links
             for court_case, fresh_url in case_list:
                 # skip if we've already recorded this case_number in this run
@@ -411,6 +415,8 @@ try:
                 case_dict = court_case.to_dict()
                 run_data["results"][court_case.case_number] = case_dict
                 case_records[court_case.case_number] = case_dict
+
+                run_data["coverage"][search_date]["recorded"] += 1
 
             # attempt to access more results
             try:

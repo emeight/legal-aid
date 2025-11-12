@@ -169,7 +169,7 @@ try:
 
         # find the coverage from this query
         search_coverage = get_search_coverage(driver, timeout)
-        case_records["coverage"][search_date] = {"found": 0, "duplicates": 0, "recorded": 0, "accessible": search_coverage}
+        run_data["coverage"][search_date] = {"found": 0, "duplicates": 0, "recorded": 0, "accessible": search_coverage}
 
         keep_alive = True
         while keep_alive:
@@ -236,12 +236,14 @@ try:
             ])
             run_data["counts"]["skipped"] += duplicate_case_count
 
+            # date-specific metrics
             run_data["coverage"][search_date]["found"] = len(case_list)
+            run_data["coverage"][search_date]["duplicates"] = duplicate_case_count
+
             # to avoid stale links, we grab all the data from the page then cycle over the links
             for court_case, fresh_url in case_list:
                 # skip if we've already recorded this case_number in this run
                 if court_case.case_number in run_data["results"]:
-                    run_data["coverage"][search_date]["duplicates"] += 1
                     continue
 
                 # visit each "Case Detail" page

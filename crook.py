@@ -15,7 +15,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from src.export import export_run_to_excel
 from src.schemas import CaseSearchConfig, CourtCase
 from src.search import get_search_coverage, search_for_cases
 from src.utils import (
@@ -491,8 +490,5 @@ finally:
         write_json_atomic(records_path, case_records)
         print(f'Records saved to "{records_path}"')
 
-        # export
-        export_run_to_excel(run_data, output_path)
-        print(f'Output saved to "{output_path}"')
     except Exception as e:
         print(f"Failed to save the run due to the exception: {e}")

@@ -11,7 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from src.schemas import CaseSearchConfig
-from src.search import get_search_coverage, search_for_cases
+from src.search import search_for_cases
 from src.utils import (
     expand_date_range,
     load_records,
@@ -27,7 +27,6 @@ data_dir_path = os.getenv("DATA_DIR")
 
 # config
 timeout = 5
-sleep = 1
 
 start_date, end_date = prompt_for_date_range()
 
@@ -42,8 +41,8 @@ main_search_config = CaseSearchConfig(
     cities=["All Cities"],
     statuses=["Active", "Closed"],
     party_types=["Plaintiff"],
-    min_sleep=sleep / 2,
-    max_sleep=sleep,
+    min_sleep=1,
+    max_sleep=2,
 )
 search_config_dict = main_search_config.to_dict()
 
@@ -83,12 +82,9 @@ try:
 
         # initialize a dated record
         dated_data = {
-            "coverage": {
-                "fraction": 0,
-                "counts": {
-                    "found": 0,
-                    "skipped": 0,
-                },
+            "counts": {
+                "found": 0,
+                "skipped": 0,
             },
             "cases": {},
         }
@@ -101,69 +97,80 @@ try:
         try:
             # search for the cases
             search_for_cases(driver, temp_search_config)
-
+            time.sleep(3)
         except Exception as e:
             print(
                 f"Unable to configure search for {search_date}, due to the exception {e}"
             )
             continue
 
-        coverage = get_search_coverage(driver, timeout)
-        dated_data["coverage"]["fraction"] = coverage
-
-        try:
-            # parse search results
-            results_table = WebDriverWait(driver, timeout).until(
-                EC.presence_of_element_located((By.ID, "grid"))
-            )
-            table_body = results_table.find_element(By.TAG_NAME, "tbody")
-            cards = table_body.find_elements(By.TAG_NAME, "tr")
-        except (TimeoutException, NoSuchElementException):
-            print(f"No results found for date {search_date}")
-            continue  # leave iteration, no results found
-
-        # go over the card components
-        case_list: List[Tuple[str, str]] = []
-        case_numbers = []
-        for card in cards:
-            # assumes we've found some form of result
-            dated_data["coverage"]["counts"]["found"] += 1
+        keep_alive = True
+        while keep_alive:
             try:
-                card_components = card.find_elements(By.TAG_NAME, "td")
-                # case links are stored in 3rd column, listed as "Case Number"
-                case_link = card_components[3]
-                case_url = case_link.find_element(By.TAG_NAME, "a").get_attribute(
-                    "href"
+                # parse search results
+                results_table = WebDriverWait(driver, timeout).until(
+                    EC.presence_of_element_located((By.ID, "grid"))
                 )
-                case_number = case_link.text.strip()
-            except (IndexError, TimeoutException, NoSuchElementException):
-                # result does not match format, skip
-                dated_data["coverage"]["counts"]["skipped"] += 1
-                continue
+                table_body = results_table.find_element(By.TAG_NAME, "tbody")
+                cards = table_body.find_elements(By.TAG_NAME, "tr")
+            except (TimeoutException, NoSuchElementException):
+                print(f"No results found for date {search_date}")
+                continue  # leave iteration, no results found
 
-            if case_number in case_numbers:
-                # we've seen it before on this date, skip
-                dated_data["coverage"]["counts"]["skipped"] += 1
-                continue
+            # go over the card components
+            case_list: List[Tuple[str, str]] = []
+            case_numbers = []
+            for card in cards:
+                # assumes we've found some form of result
+                dated_data["counts"]["found"] += 1
+                try:
+                    card_components = card.find_elements(By.TAG_NAME, "td")
+                    # case links are stored in 3rd column, listed as "Case Number"
+                    case_link = card_components[3]
+                    case_url = case_link.find_element(By.TAG_NAME, "a").get_attribute(
+                        "href"
+                    )
+                    case_number = case_link.text.strip()
+                except (IndexError, TimeoutException, NoSuchElementException):
+                    # result does not match format, skip
+                    dated_data["counts"]["skipped"] += 1
+                    continue
 
-            case_numbers.append(case_number)
-            case_list.append((case_number, case_url))
+                if case_number in case_numbers:
+                    # we've seen it before on this date, skip
+                    dated_data["counts"]["skipped"] += 1
+                    continue
 
-        for case_num, fresh_url in case_list:
-            # default to an empty string
-            html_str = ""
+                case_numbers.append(case_number)
+                case_list.append((case_number, case_url))
+
+            for case_num, fresh_url in case_list:
+                # default to an empty string
+                html_str = ""
+                try:
+                    driver.get(fresh_url)
+                    html_str = driver.page_source
+                    time.sleep(1.5)
+                except Exception:
+                    pass
+                finally:
+                    # always record
+                    dated_data["cases"][case_num] = html_str
+
+            # attempt to access more results
             try:
-                driver.get(fresh_url)
-                html_str = driver.page_source
-                time.sleep(sleep)
-            except Exception:
-                pass
-            finally:
-                # always record
-                dated_data["cases"][case_num] = html_str
+                driver.find_element(By.XPATH, "//a[@title='Search Results']").click()
+                time.sleep(3)
+                driver.find_element(By.XPATH, "//a[@title='Go to next page']").click()
+                time.sleep(3)
+            except (TimeoutException, Exception):
+                print("Results exhausted.")
+                keep_alive = False
+                break
 
         # record dated results
         results[search_date] = dated_data
+        print(f"Successfully recorded the results for {search_date}")
 
         # go back home to start the next search
         WebDriverWait(driver, timeout).until(
@@ -178,8 +185,7 @@ try:
                 (By.CSS_SELECTOR, "a.anchorButton.welcome-section")
             )
         ).click()
-
-        time.sleep(sleep)
+        time.sleep(1.5)
 except Exception as e:
     print(f"Run failed due to the exception: {e}")
 finally:

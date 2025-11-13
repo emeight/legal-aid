@@ -158,7 +158,6 @@ def get_search_coverage(driver: WebDriver, timeout: int = 15) -> float:
         # extract numbers with regex
         nums = re.findall(r"\d+", text)
 
-        nums = re.findall(r"\d+", text)
         if len(nums) >= 2:
             returned, total = map(int, nums[:2])
             return returned / total if total else 1.0
